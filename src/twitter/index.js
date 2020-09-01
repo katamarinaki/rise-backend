@@ -14,46 +14,44 @@ export const Twitter = new Twit({
   // strictSSL: true, // optional - requires SSL certificates to be valid.
 })
 
-export const getTweets = (ctx, keyword) => {
-  Twitter.get('search/tweets', {
-    q: keyword,
-    count: 10,
-    include_entities: false,
-    include_rts: false,
-    include_user_entities: false,
-  })
-    .then((d) => {
-      const tweets = get(d.data, 'statuses')
-      if (!tweets) {
-        throw 'No tweets found'
-      }
-      const trendingCause = getPreparedTrendFromTweets(tweets, keyword)
-      ctx.websocket.send(JSON.stringify(trendingCause))
-      openTwitterStream(ctx, keyword)
+export const getTweets = (ctx) => {
+  const keywords = db.get('keywords').value()
+  keywords.map((keyword) =>
+    Twitter.get('search/tweets', {
+      q: keyword,
+      count: 10,
+      include_entities: false,
+      include_rts: false,
+      include_user_entities: false,
     })
-    .catch((err) => {
-      throw err
-    })
+      .then((d) => {
+        const tweets = get(d.data, 'statuses')
+        if (!tweets) {
+          throw 'No tweets found'
+        }
+        const trendingCause = getPreparedTrendFromTweets(tweets, keyword)
+        ctx.websocket.send(JSON.stringify(trendingCause))
+      })
+      .catch((err) => {
+        throw err
+      })
+  )
+  openTwitterStream(ctx, keywords)
 }
 
-export const openTwitterStream = (ctx, keyword) => {
-  const stream = Twitter.stream('statuses/filter', { track: keyword })
-  console.log('Open Twitter Stream for: ', keyword)
+const openTwitterStream = (ctx, keywords) => {
+  const mergedKeyword = keywords.join(',')
+  const stream = Twitter.stream('statuses/filter', { track: mergedKeyword })
   stream.on('error', () => stream.stop())
   ctx.websocket.on('close', () => {
     stream.stop()
   })
   stream.on('tweet', (tweet) => {
-    console.log('NEW TWEET WITH: ', keyword)
-    const trendingCause = getPreparedTrendFromTweets([tweet], keyword)
-    ctx.websocket.send(JSON.stringify(trendingCause))
-  })
-
-  stream.on('disconnect', (disconnectMessage) => {
-    console.log('DISCONNECT: ', disconnectMessage)
-  })
-  stream.on('limit', (limitMessage) => {
-    console.log('LIMIT: ', limitMessage)
+    const foundKeywords = keywords.filter((kw) => tweet.text.includes(kw))
+    foundKeywords.map((foundKeyword) => {
+      const trendingCause = getPreparedTrendFromTweets([tweet], foundKeyword)
+      ctx.websocket.send(JSON.stringify(trendingCause))
+    })
   })
 }
 
@@ -71,7 +69,7 @@ const getPreparedTrendByKeyword = (keyword) => {
   }
 }
 
-export const getPreparedTrendFromTweets = (tweets, keyword) => {
+const getPreparedTrendFromTweets = (tweets, keyword) => {
   const scoreObjects = tweets.map((t) => getScoreFromTweet(t, keyword))
   const count = get(scoreObjects, 'length', 0)
   const sumScore = sum(scoreObjects) + count * 10

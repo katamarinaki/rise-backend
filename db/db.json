@@ -1,28 +1,4 @@
 {
-  "trendingCauses": [
-    {
-      "id": "llGmOxmwQtYMWWGQnH4ky",
-      "keyword": "#ImVotingForTrump",
-      "sumScore": 120,
-      "count": 12
-    },
-    {
-      "id": "p_MB1ceMFjEKbVPHnEVqQ",
-      "keyword": "Belarus",
-      "sumScore": 1204,
-      "count": 83
-    },
-    {
-      "id": "CInQxF0J9KSkAewMP_gxz",
-      "keyword": "Coronavirus",
-      "sumScore": 1324,
-      "count": 20
-    },
-    {
-      "id": "UwRZ0AizUdoi4GC6gix0x",
-      "keyword": "#ImVotingForJoe",
-      "sumScore": 2082,
-      "count": 198
-    }
-  ]
+  "trendingCauses": [],
+  "keywords": ["#BLM", "#ImVotingForJoe", "Coronavirus", "Belarus"]
 }
