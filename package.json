@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec babel-node src/index.js",
+    "dev": "nodemon --exec babel-node src/index.js --ignore 'db/*.json'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -24,6 +24,9 @@
     "koa": "^2.13.0",
     "koa-websocket": "^6.0.0",
     "lodash": "^4.17.20",
+    "lowdb": "^1.0.0",
+    "luxon": "^1.25.0",
+    "nanoid": "^3.1.12",
     "twit": "^2.2.11"
   }
 }
