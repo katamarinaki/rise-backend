@@ -2,7 +2,7 @@ import Twit from 'twit'
 import 'dotenv/config'
 import { DateTime } from 'luxon'
 import { nanoid } from 'nanoid'
-import { get, sum } from 'lodash'
+import { get, random, sum } from 'lodash'
 import db from '../db'
 
 export const Twitter = new Twit({
@@ -38,13 +38,22 @@ export const getTweets = (ctx, keyword) => {
 
 export const openTwitterStream = (ctx, keyword) => {
   const stream = Twitter.stream('statuses/filter', { track: keyword })
+  console.log('Open Twitter Stream for: ', keyword)
   stream.on('error', () => stream.stop())
   ctx.websocket.on('close', () => {
     stream.stop()
   })
   stream.on('tweet', (tweet) => {
+    console.log('NEW TWEET WITH: ', keyword)
     const trendingCause = getPreparedTrendFromTweets([tweet], keyword)
     ctx.websocket.send(JSON.stringify(trendingCause))
+  })
+
+  stream.on('disconnect', (disconnectMessage) => {
+    console.log('DISCONNECT: ', disconnectMessage)
+  })
+  stream.on('limit', (limitMessage) => {
+    console.log('LIMIT: ', limitMessage)
   })
 }
 
@@ -58,14 +67,14 @@ const getPreparedTrendByKeyword = (keyword) => {
     id: rawTrend.id,
     name: keyword,
     value: score,
-    color: getTrendColor(score),
+    color: getTrendColor(),
   }
 }
 
 export const getPreparedTrendFromTweets = (tweets, keyword) => {
   const scoreObjects = tweets.map((t) => getScoreFromTweet(t, keyword))
-  const sumScore = sum(scoreObjects)
   const count = get(scoreObjects, 'length', 0)
+  const sumScore = sum(scoreObjects) + count * 10
   const existingCause = db.get('trendingCauses').find({ keyword })
   const existingCauseValue = existingCause.value()
   if (!existingCauseValue) {
@@ -97,9 +106,9 @@ const getScoreFromTweet = (tweet) => {
   const likeScore = parseInt(tweet.favorite_count, 10) * 0.2
   const rtScore = parseInt(tweet.retweet_count, 10) * 0.3
   const timeScore =
-    currDate.minus({ seconds: tweetDate.toSeconds() }).toSeconds() * 0.5
+    (currDate.minus({ seconds: tweetDate.toSeconds() }).toSeconds() / 60) * 0.5
 
-  let finalScore = Math.floor(likeScore + rtScore + timeScore)
+  let finalScore = Math.floor((likeScore + rtScore + timeScore) / 100)
 
   if (finalScore < 0) {
     return 0
@@ -108,27 +117,18 @@ const getScoreFromTweet = (tweet) => {
   return finalScore
 }
 
-const getTrendColor = (score) => {
-  switch (true) {
-    case score < 10:
-      return '#602BD0'
-    case score < 20:
-      return '#2353FF'
-    case score < 30:
-      return '#53A3ED'
-    case score < 40:
-      return '#32DAFF'
-    case score < 80:
-      return '#00FFC2'
-    case score < 100:
-      return '#5EFD81'
-    case score < 120:
-      return '#C8F34E'
-    case score < 160:
-      return '#E5E922'
-    case score < 200:
-      return '#FFCD4C'
-    default:
-      return '#FF4D4D'
-  }
+const getTrendColor = () => {
+  const colors = [
+    '#602BD0',
+    '#2353FF',
+    '#53A3ED',
+    '#32DAFF',
+    '#00FFC2',
+    '#5EFD81',
+    '#C8F34E',
+    '#E5E922',
+    '#FFCD4C',
+    '#FF4D4D',
+  ]
+  return colors[random(0, colors.length - 1, false)]
 }
