@@ -1,11 +1,7 @@
 import Koa from 'koa'
 import KoaRouter from '@koa/router'
 import websockify from 'koa-websocket'
-import {
-  getPreparedTrendFromTweets,
-  openTwitterStream,
-  Twitter,
-} from './twitter'
+import { getTweets } from './twitter'
 import { get } from 'lodash'
 
 const app = websockify(new Koa())
@@ -24,26 +20,10 @@ wsRouter.all('/twitter', async (ctx) => {
       const args = get(messageObj, 'args', {})
       switch (command) {
         case 'getTweets':
-          Twitter.get('search/tweets', {
-            q: args.q,
-            count: 10,
-            include_entities: false,
-            include_rts: false,
-            include_user_entities: false,
-          })
-            .then((d) => {
-              const tweets = get(d.data, 'statuses')
-              if (!tweets) {
-                throw 'No tweets found'
-              }
-              const trendingCause = getPreparedTrendFromTweets(tweets, args.q)
-              ctx.websocket.send(JSON.stringify(trendingCause))
-              openTwitterStream(ctx, args)
-            })
-            .catch((err) => {
-              throw err
-            })
-
+          getTweets(ctx, args.keyword)
+          break
+        case 'close':
+          ctx.websocket.close()
           break
         case 'ping':
           ctx.websocket.send(message)
@@ -60,7 +40,7 @@ wsRouter.all('/twitter', async (ctx) => {
 })
 
 router.get('/ping', async (ctx) => {
-  ctx.body = 'PONG'
+  ctx.body = 'pong'
 })
 
 app.use(router.routes())

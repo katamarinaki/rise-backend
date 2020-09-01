@@ -14,12 +14,36 @@ export const Twitter = new Twit({
   // strictSSL: true, // optional - requires SSL certificates to be valid.
 })
 
-export const openTwitterStream = (ctx, args) => {
-  var stream = Twitter.stream('statuses/filter', { track: args.q })
-  stream.on('error', () => stream.stop())
+export const getTweets = (ctx, keyword) => {
+  Twitter.get('search/tweets', {
+    q: keyword,
+    count: 10,
+    include_entities: false,
+    include_rts: false,
+    include_user_entities: false,
+  })
+    .then((d) => {
+      const tweets = get(d.data, 'statuses')
+      if (!tweets) {
+        throw 'No tweets found'
+      }
+      const trendingCause = getPreparedTrendFromTweets(tweets, keyword)
+      ctx.websocket.send(JSON.stringify(trendingCause))
+      openTwitterStream(ctx, keyword)
+    })
+    .catch((err) => {
+      throw err
+    })
+}
 
+export const openTwitterStream = (ctx, keyword) => {
+  const stream = Twitter.stream('statuses/filter', { track: keyword })
+  stream.on('error', () => stream.stop())
+  ctx.websocket.on('close', () => {
+    stream.stop()
+  })
   stream.on('tweet', (tweet) => {
-    const trendingCause = getPreparedTrendFromTweets([tweet], args.q)
+    const trendingCause = getPreparedTrendFromTweets([tweet], keyword)
     ctx.websocket.send(JSON.stringify(trendingCause))
   })
 }
@@ -29,13 +53,11 @@ const getPreparedTrendByKeyword = (keyword) => {
   if (!rawTrend) {
     return null
   }
-  const score = Math.floor(rawTrend.sumScore / rawTrend.count)
+  const score = Math.floor(rawTrend.sumScore + rawTrend.count * 0.5)
   return {
     id: rawTrend.id,
     name: keyword,
     value: score,
-    maxValue: score,
-    isSelected: false,
     color: getTrendColor(score),
   }
 }
