@@ -3,7 +3,7 @@ import 'dotenv/config'
 import { DateTime } from 'luxon'
 import { nanoid } from 'nanoid'
 import { get, random, sum } from 'lodash'
-import db from '../db'
+import db from '@src/db'
 
 export const Twitter = new Twit({
   consumer_key: process.env.T_CONSUMER_KEY,

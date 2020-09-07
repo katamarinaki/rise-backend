@@ -14,17 +14,20 @@
     "@babel/core": "^7.11.4",
     "@babel/node": "^7.10.5",
     "@babel/preset-env": "^7.11.0",
+    "babel-plugin-module-resolver": "^4.0.0",
     "eslint": "^5.16.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-node": "^11.1.0",
     "nodemon": "^2.0.4"
   },
   "dependencies": {
     "@koa/router": "^9.4.0",
     "dotenv": "^8.2.0",
+    "firebase-admin": "^9.1.1",
     "koa": "^2.13.0",
     "koa-websocket": "^6.0.0",
     "lodash": "^4.17.20",
-    "lowdb": "^1.0.0",
     "luxon": "^1.25.0",
     "nanoid": "^3.1.12",
     "twit": "^2.2.11"
